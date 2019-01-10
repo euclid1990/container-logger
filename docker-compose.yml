@@ -1,0 +1,90 @@
+version: '3.6'
+
+services:
+  fluentd:
+    build:
+      context: fluentd
+      dockerfile: Dockerfile
+    image: i-fluentd
+    ports:
+      - 24224:24224
+      - 24224:24224/udp
+    links:
+      - elasticsearch
+    env_file: .env
+    networks:
+      - container_logger
+
+  filebeat:
+    build:
+      context: filebeat
+      dockerfile: Dockerfile
+    image: i-filebeat
+    user: root
+    volumes:
+      - filebeat:/usr/share/filebeat/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
+      - /var/log/:/var/log/:ro
+    command: ['/bin/bash', '/command.sh']
+    env_file: .env
+    depends_on: ['elasticsearch', 'kibana']
+    networks:
+      - container_logger
+
+  metricbeat:
+    build:
+      context: metricbeat
+      dockerfile: Dockerfile
+    image: i-metricbeat
+    user: root
+    volumes:
+      - /proc:/hostfs/proc:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /:/hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - metricbeat:/usr/share/metricbeat/data
+    env_file: .env
+    command: ['/bin/bash', '/command.sh']
+    depends_on: ['elasticsearch', 'kibana']
+    networks:
+      - container_logger
+
+  elasticsearch:
+    build:
+      context: elasticsearch
+      dockerfile: Dockerfile
+    image: i-elasticsearch
+    expose:
+      - 9200
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    env_file: .env
+    networks:
+      - container_logger
+
+  kibana:
+    build:
+      context: kibana
+      dockerfile: Dockerfile
+    image: i-kibana
+    ports:
+      - 5601:5601
+    links:
+      - elasticsearch
+    env_file: .env
+    networks:
+      - container_logger
+
+networks:
+  container_logger:
+    name: container_logger
+    driver: bridge
+
+volumes:
+  elasticsearch:
+    driver: local
+  filebeat:
+    driver: local
+  metricbeat:
+    driver: local
