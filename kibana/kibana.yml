@@ -1,5 +1,5 @@
 server.name: kibana
-server.host: "0"
+server.host: "0.0.0.0"
 elasticsearch.url: ${ELASTIC_URL}
 elasticsearch.username: ${ELASTIC_USERNAME}
 elasticsearch.password: ${ELASTIC_PASSWORD}
