@@ -1,0 +1,1 @@
+0 * * * * curator /root/.curator/action.yml
