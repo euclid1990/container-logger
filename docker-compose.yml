@@ -76,6 +76,17 @@ services:
     networks:
       - container_logger
 
+  curator:
+    build:
+      context: curator
+      dockerfile: Dockerfile
+    image: i-curator
+    depends_on:
+      - elasticsearch
+    env_file: .env
+    networks:
+      - container_logger
+
 networks:
   container_logger:
     name: container_logger
