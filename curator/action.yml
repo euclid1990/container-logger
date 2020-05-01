@@ -2,17 +2,38 @@ actions:
   1:
     action: delete_indices
     description: >-
-       Delete old indices in Elasticsearch logs (based on index name).
+       Delete old Metricbeat indices in Elasticsearch logs (based on index name).
     options:
       ignore_empty_list: True
       timeout_override:
       continue_if_exception: True
       disable_action: False
     filters:
+    - filtertype: pattern
+      kind: prefix
+      value: metricbeat-
     - filtertype: age
       source: name
       direction: older
       timestring: '%Y.%m.%d'
-      unit: ${CURATOR_UNIT:days}
-      unit_count: ${CURATOR_UNIT_COUNT:3}
-      exclude:
+      unit: ${METRICBEAT_CURATOR_UNIT:days}
+      unit_count: ${METRICBEAT_CURATOR_UNIT_COUNT:3}
+  2:
+    action: delete_indices
+    description: >-
+       Delete old Filebeat indices in Elasticsearch logs (based on index name).
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: True
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: filebeat-
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: ${FILEBEAT_CURATOR_UNIT:days}
+      unit_count: ${FILEBEAT_CURATOR_UNIT_COUNT:3}

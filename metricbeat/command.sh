@@ -3,8 +3,10 @@
 set -euo pipefail
 
 until curl -s "${KIBANA_URL}/login" | grep "Loading Kibana" > /dev/null; do
-	  echo "Waiting for kibana..."
-	  sleep 1
+	  echo "[Metricbeat] Waiting for Kibana..."
+	  sleep ${RETRY_TIME}
 done
 
-metricbeat --strict.perms=false -system.hostfs=/hostfs
+echo "[Metricbeat] Conneted to Kibana!"
+
+metricbeat -e --strict.perms=false -system.hostfs=/hostfs

@@ -1,3 +1,5 @@
-FROM docker.elastic.co/elasticsearch/elasticsearch:6.5.4
+ARG ELKF_VERSION
+
+FROM docker.elastic.co/elasticsearch/elasticsearch:${ELKF_VERSION}
 
 COPY elasticsearch.yml /usr/share/elasticsearch/config/elasticsearch.yml

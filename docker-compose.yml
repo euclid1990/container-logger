@@ -1,95 +1,112 @@
-version: '3.6'
+version: '3.7'
 
 services:
-  fluentd:
-    build:
-      context: fluentd
-      dockerfile: Dockerfile
-    image: i-fluentd
-    ports:
-      - 24224:24224
-      - 24224:24224/udp
-    links:
-      - elasticsearch
-    env_file: .env
-    networks:
-      - container_logger
-
   filebeat:
     build:
       context: filebeat
-      dockerfile: Dockerfile
-    image: i-filebeat
+      args:
+        ELKF_VERSION: $ELKF_VERSION
+    image: ops-filebeat
     user: root
     volumes:
       - filebeat:/usr/share/filebeat/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
       - /var/log/:/var/log/:ro
     command: ['/bin/bash', '/command.sh']
     env_file: .env
-    depends_on: ['elasticsearch', 'kibana']
+    links:
+      - 'elasticsearch'
+      - 'kibana'
     networks:
-      - container_logger
+      - internal
 
   metricbeat:
     build:
       context: metricbeat
-      dockerfile: Dockerfile
-    image: i-metricbeat
+      args:
+        ELKF_VERSION: $ELKF_VERSION
+    image: ops-metricbeat
     user: root
     volumes:
+      - metricbeat:/usr/share/metricbeat/data
       - /proc:/hostfs/proc:ro
       - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
       - /:/hostfs:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - metricbeat:/usr/share/metricbeat/data
-    env_file: .env
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     command: ['/bin/bash', '/command.sh']
-    depends_on: ['elasticsearch', 'kibana']
+    env_file: .env
+    links:
+      - 'elasticsearch'
+      - 'kibana'
     networks:
-      - container_logger
+      - internal
 
   elasticsearch:
     build:
       context: elasticsearch
-      dockerfile: Dockerfile
-    image: i-elasticsearch
-    expose:
-      - 9200
+      args:
+        ELKF_VERSION: $ELKF_VERSION
+    image: ops-elasticsearch
+    env_file: .env
+    environment:
+      ES_JAVA_OPTS: "${ELASTIC_JAVA_OPTS}"
+    ports:
+      - 9200:9200
     volumes:
       - elasticsearch:/usr/share/elasticsearch/data
-    env_file: .env
     networks:
-      - container_logger
+      - internal
+
+  logstash:
+    build:
+      context: logstash
+      args:
+        ELKF_VERSION: $ELKF_VERSION
+    image: ops-logstash
+    env_file: .env
+    ports:
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - 5044:5044
+      - 9600:9600
+    environment:
+      LS_JAVA_OPTS: "${LOGSTASH_JAVA_OPTS}"
+    links:
+      - elasticsearch
+    networks:
+      - internal
 
   kibana:
     build:
       context: kibana
-      dockerfile: Dockerfile
-    image: i-kibana
+      args:
+        ELKF_VERSION: $ELKF_VERSION
+    image: ops-kibana
+    env_file: .env
     ports:
       - 5601:5601
     links:
       - elasticsearch
-    env_file: .env
     networks:
-      - container_logger
+      - internal
 
   curator:
     build:
       context: curator
-      dockerfile: Dockerfile
-    image: i-curator
-    depends_on:
-      - elasticsearch
+      args:
+        CURATOR_VERSION: $CURATOR_VERSION
+        CURATOR_SCHEDULE: $CURATOR_SCHEDULE
+    image: ops-curator
     env_file: .env
+    links:
+      - elasticsearch
     networks:
-      - container_logger
+      - internal
 
 networks:
-  container_logger:
-    name: container_logger
+  internal:
+    name: internal
     driver: bridge
 
 volumes:

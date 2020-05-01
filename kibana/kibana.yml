@@ -1,7 +1,8 @@
 server.name: kibana
 server.host: "0.0.0.0"
-elasticsearch.url: ${ELASTIC_URL}
+elasticsearch.hosts: ["${ELASTIC_URL}"]
 elasticsearch.username: ${ELASTIC_USERNAME}
 elasticsearch.password: ${ELASTIC_PASSWORD}
 xpack.monitoring.ui.container.elasticsearch.enabled: true
 xpack.monitoring.kibana.collection.enabled: true
+logging.quiet: true
