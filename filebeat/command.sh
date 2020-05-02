@@ -13,6 +13,7 @@ echo "[Filebeat] Conneted to Kibana!"
 filebeat setup --index-management -E output.logstash.enabled=false \
     -E 'output.elasticsearch.hosts=["${ELASTIC_HOST}:${ELASTIC_PORT}"]' \
     -E 'output.elasticsearch.username="${ELASTIC_USERNAME}"' \
-    -E 'output.elasticsearch.password="${ELASTIC_PASSWORD}"'
+    -E 'output.elasticsearch.password="${ELASTIC_PASSWORD}"' \
+    -e -strict.perms=false
 
 filebeat -e -strict.perms=false
