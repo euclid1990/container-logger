@@ -3,8 +3,8 @@
 set -euo pipefail
 
 until curl -s "${KIBANA_URL}/login" | grep "Loading Kibana" > /dev/null; do
-	  echo "[Filebeat] Waiting for Kibana..."
-	  sleep ${RETRY_TIME}
+    echo "[Filebeat] Waiting for Kibana..."
+    sleep ${RETRY_TIME}
 done
 
 echo "[Filebeat] Conneted to Kibana!"

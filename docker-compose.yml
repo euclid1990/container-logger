@@ -84,6 +84,8 @@ services:
         ELKF_VERSION: $ELKF_VERSION
     image: ops-kibana
     env_file: .env
+    expose:
+      - 5601
     ports:
       - 5601:5601
     links:
@@ -101,6 +103,22 @@ services:
     env_file: .env
     links:
       - elasticsearch
+    networks:
+      - internal
+
+  nginx:
+    build:
+      context: nginx
+      args:
+        NGINX_BASIC_AUTH_USERNAME: $NGINX_BASIC_AUTH_USERNAME
+        NGINX_BASIC_AUTH_PASSWORD: $NGINX_BASIC_AUTH_PASSWORD
+    image: ops-nginx
+    env_file: .env
+    command: ['/bin/bash', '/command.sh']
+    ports:
+      - 5602:80
+    links:
+      - kibana
     networks:
       - internal
 
