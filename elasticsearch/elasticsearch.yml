@@ -10,6 +10,6 @@ path.repo: ["/usr/share/elasticsearch/backups"]
 xpack.license.self_generated.type: trial
 xpack.monitoring.enabled: true
 xpack.security.enabled: true
-xpack.watcher.enabled: false
+xpack.watcher.enabled: true
 xpack.ml.enabled: false
 xpack.monitoring.collection.enabled: true
