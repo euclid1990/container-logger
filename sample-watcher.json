@@ -1,97 +1,102 @@
 {
-    "trigger": {
-      "schedule": {
-        "interval": "2m"
-      }
-    },
-    "input": {
-      "search": {
-        "request": {
-          "search_type": "query_then_fetch",
-          "indices": [
-            "filebeat-*"
+  "trigger": {
+    "schedule": {
+      "interval": "3m"
+    }
+  },
+  "input": {
+    "search": {
+      "request": {
+        "search_type": "query_then_fetch",
+        "indices": [
+          "filebeat-*"
+        ],
+        "rest_total_hits_as_int": true,
+        "body": {
+          "_source": [
+            "@timestamp",
+            "message"
           ],
-          "rest_total_hits_as_int": true,
-          "body": {
-            "_source": [
-              "@timestamp",
-              "message"
-            ],
-            "sort": [
-              {
-                "@timestamp": "asc"
-              }
-            ],
-            "query": {
-              "bool": {
-                "must": [
-                  {
-                    "regexp": {
-                      "container.name": ".*app.*"
-                    }
+          "sort": [
+            {
+              "@timestamp": "asc"
+            }
+          ],
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "regexp": {
+                    "container.name": ".*app.*"
                   }
-                ],
-                "should": [
-                  {
-                    "match": {
-                      "message": "Exiting"
-                    }
-                  },
-                  {
-                    "match": {
-                      "message": "Aborted"
-                    }
-                  }
-                ],
-                "filter": {
-                  "range": {
-                    "@timestamp": {
-                      "gte": "{{ctx.trigger.scheduled_time}}||-2m",
-                      "lte": "{{ctx.trigger.scheduled_time}}",
-                      "format": "strict_date_time||epoch_millis"
-                    }
+                }
+              ],
+              "should": [
+                {
+                  "match": {
+                    "message": "Exiting"
                   }
                 },
-                "minimum_should_match" : 1
-              }
+                {
+                  "match": {
+                    "message": "Aborted"
+                  }
+                },
+                {
+                  "match": {
+                    "message": "Error"
+                  }
+                }
+              ],
+              "filter": {
+                "range": {
+                  "@timestamp": {
+                    "gte": "{{ctx.trigger.scheduled_time}}||-3m",
+                    "lte": "{{ctx.trigger.scheduled_time}}",
+                    "format": "strict_date_time||epoch_millis"
+                  }
+                }
+              },
+              "minimum_should_match": 1
             }
           }
         }
       }
-    },
-    "condition": {
-      "script": {
-        "source": "if (ctx.payload.hits.total >= params.threshold) { return true; } return false;",
-        "lang": "painless",
-        "params": {
-          "threshold": 1
-        }
+    }
+  },
+  "condition": {
+    "script": {
+      "source": "if (ctx.payload.hits.total >= params.threshold) { return true; } return false;",
+      "lang": "painless",
+      "params": {
+        "threshold": 1
       }
-    },
-    "actions": {
-      "webhook_1": {
-        "webhook": {
-          "scheme": "https",
-          "host": "api.chatwork.com",
-          "port": 443,
-          "method": "post",
-          "path": "v2/rooms/{{replace_chatwork_room_id}}/messages",
-          "params": {
-            "body": "[info][title]Alert Monitoring - {{ctx.metadata.name}}[/title]■ Trigger Time: {{ctx.payload.executed_time}}\n■ Occurred Times: {{ctx.payload.total}}\n■ Detail: {{ctx.payload.detail}}\n■ Filter Link: https://kibana.example.com[/info]"
-          },
-          "headers": {
-            "X-ChatWorkToken": "{{replace_chatwork_api_secret_token}}"
-          }
-        }
-      }
-    },
-    "transform": {
-      "script": {
-        "source": "HashMap result = new HashMap(); result.total = ctx.payload.hits.total; ArrayList docs = ctx.payload.hits.hits; def execution_datetime = ZonedDateTime.ofInstant(ctx.execution_time.toInstant(), ctx.execution_time.getZone()); result.executed_time = DateTimeFormatter.RFC_1123_DATE_TIME.format(execution_datetime); result.docs = new ArrayList(); result.detail = ''; for (int i = 0; i < docs.length; i++) { result.docs.add(docs[i]._source); result.detail += '[code]🗝 ' + docs[i]._id + '\n⏰ ' + docs[i]._source['@timestamp'] + '\n📄 ' + docs[i]._source['message'] + '[/code]' } return result;",
-        "lang": "painless",
+    }
+  },
+  "actions": {
+    "webhook_1": {
+      "webhook": {
+        "scheme": "https",
+        "host": "api.chatwork.com",
+        "port": 443,
+        "method": "post",
+        "path": "v2/rooms/{{replace_chatwork_room_id}}/messages",
         "params": {
-          "threshold": 1
+          "body": "[info][title]Alert Monitoring - {{ctx.metadata.name}}[/title]■ Trigger Time: {{ctx.payload.executed_time}}\n■ Occurred Times: {{ctx.payload.total}}\n■ Detail: {{ctx.payload.detail}}\n■ Filter Link: https://link.sun-asterisk.vn/aldxEr[/info]"
+        },
+        "headers": {
+          "X-ChatWorkToken": "{{replace_chatwork_api_secret_token}}"
         }
       }
     }
+  },
+  "transform": {
+    "script": {
+      "source": "HashMap result = new HashMap(); result.total = ctx.payload.hits.total; ArrayList docs = ctx.payload.hits.hits; def execution_datetime = ZonedDateTime.ofInstant(ctx.execution_time.toInstant(), ctx.execution_time.getZone()); result.executed_time = DateTimeFormatter.RFC_1123_DATE_TIME.format(execution_datetime); result.docs = new ArrayList(); result.detail = ''; for (int i = 0; i < docs.length; i++) { def message = docs[i]._source['message'];def max = message.length();if (max > 300) {max = 300;} String msg = message.substring(0, max) + '...'; result.docs.add(docs[i]._source); result.detail += '[code]🗝 ' + docs[i]._id + '\n⏰ ' + docs[i]._source['@timestamp'] + '\n📄 ' + msg + '[/code]'  } return result;",
+      "lang": "painless",
+      "params": {
+        "threshold": 1
+      }
+    }
   }
+}
